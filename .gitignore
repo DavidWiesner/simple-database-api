@@ -1,0 +1,12 @@
+## IDEA
+.idea/*
+!.idea/.name
+!.idea/codeStyleSettings.xml
+## File-based project format
+*.ipr
+*.iws
+*.iml
+
+## composer
+vendor/
+composer.phar
