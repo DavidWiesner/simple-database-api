@@ -33,8 +33,8 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $data = $this->dataAccess->select('books');
 
         $this->assertSame([
-                ['id' => '1', 'title' => 'last', 'price' => '2'],
-                ['id' => '2', 'title' => 'first', 'price' => '1']
+                ['id' => '1', 'title' => 'last', 'price' => '2.0'],
+                ['id' => '2', 'title' => 'first', 'price' => '1.5']
         ], $data);
     }
 
@@ -45,7 +45,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $prices = $this->dataAccess->select('books', 'price');
 
         $this->assertSame([['1`st' => '1'],['1`st' => '2']], $ids);
-        $this->assertSame([['price' => '2'],['price' => '1']], $prices);
+        $this->assertSame([['price' => '2.0'],['price' => '1.5']], $prices);
     }
 
     public function testGetColumnArrayOne()
@@ -63,7 +63,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $prices = $this->dataAccess->select('books', array('price', 'id'));
 
         $this->assertSame([['1`st' => '1'],['1`st' => '2']], $ids);
-        $this->assertSame([['price' => '2', 'id'=> '1'],['price' => '1', 'id'=> '2']], $prices);
+        $this->assertSame([['price' => '2.0', 'id'=> '1'],['price' => '1.5', 'id'=> '2']], $prices);
     }
 
     public function testGetColumnArrayOrder()
@@ -71,8 +71,8 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $prices_id = $this->dataAccess->select('books', array('price', 'id'));
         $id_prices = $this->dataAccess->select('books', array('id', 'price'));
 
-        $this->assertSame([['price' => '2', 'id'=> '1'],['price' => '1', 'id'=> '2']], $prices_id);
-        $this->assertSame([['id'=> '1', 'price' => '2'],['id'=> '2', 'price' => '1']], $id_prices);
+        $this->assertSame([['price' => '2.0', 'id'=> '1'],['price' => '1.5', 'id'=> '2']], $prices_id);
+        $this->assertSame([['id'=> '1', 'price' => '2.0'],['id'=> '2', 'price' => '1.5']], $id_prices);
     }
 
     public function testGetWithOneParameter()
@@ -80,7 +80,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 
         $data = $this->dataAccess->select('books', [], ['id' => '1']);
 
-        $this->assertSame([['id' => '1', 'title' => 'last', 'price' => '2']], $data);
+        $this->assertSame([['id' => '1', 'title' => 'last', 'price' => '2.0']], $data);
     }
 
     public function testGetOneEscapedParameter()
@@ -95,7 +95,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     {
         $data = $this->dataAccess->select('books', [], ['id' => '1', 'price' => '2']);
 
-        $this->assertsame([['id' => '1', 'title' => 'last', 'price' => '2']], $data);
+        $this->assertsame([['id' => '1', 'title' => 'last', 'price' => '2.0']], $data);
     }
 
     public function testGetAllSortedNative()
@@ -229,8 +229,8 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     protected function setupTable()
     {
         $this->db->exec('CREATE TABLE IF NOT EXISTS books (
-							id int(11) NOT NULL,  title varchar(200) NOT NULL, price int(11) NOT NULL);');
-        $this->db->exec('INSERT INTO `books` (`id`, `title`, `price`) VALUES (1, "last", 2), (2, "first", 1);');
+							id int(11) NOT NULL,  title varchar(200) NOT NULL, price REAL NOT NULL);');
+        $this->db->exec('INSERT INTO `books` (`id`, `title`, `price`) VALUES (1, "last", 2), (2, "first", 1.50);');
         $this->db->exec('INSERT INTO `users` (`id`,`email`, `password`) ' .
                 'VALUES (1, "user1", "pass1"), (2, "user2", "pass2");');
         $this->db->exec('CREATE TABLE `test``escp` (`1``st` INT, `2````st` INT NOT NULL);
