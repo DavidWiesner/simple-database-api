@@ -11,11 +11,6 @@ use PDOException;
 class DataAccess
 {
     /**
-     * @var \Psr\Log\LoggerInterface
-     */
-    private $logger;
-
-    /**
      * @var \PDO
      */
     private $pdo;
@@ -43,20 +38,26 @@ class DataAccess
     }
 
     /**
-     * @param $table
-     * @param array|string $cols
-     * @param array $params
-     * @param string $orderBy
-     * @return array with one object
+     * Run a <code>SELECT</code> statement on a database table.
+     *
+     * @param string       $table   table name the select should work on
+     * @param array|string $cols    the name or the array of column names that should be selected
+     * @param array        $filter  an associative array of filter conditions. The key are the column name, the values
+     *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
+     *                              <code>['title'=>'Simple Dataaccess', 'price'=>'10.0']</code>
+     * @param string       $orderBy columns the result should be ordered by. For now (see Issue #3)only ascending is
+     *                              supported
+     * @return array returns an array containing all rows in the result set. Each row is an associative array indexed
+     *                              with the column names
      * @throws PDOException
      */
-    public function select($table, $cols = [], $params = [], $orderBy = '')
+    public function select($table, $cols = [], $filter = [], $orderBy = '')
     {
         $cols = is_string($cols) ? [$cols] : $cols;
         $cols = $this->filter($table, $cols);
         $sqlCols = empty($cols) ? '*' : implode(',', $this->quoteIdentifiers($cols));
 
-        $fields = $this->filterKeys($table, $params);
+        $fields = $this->filterKeys($table, $filter);
         $escapedFields = $this->quoteIdentifiers($fields);
 
         $statement = $this->implodeBindFields($escapedFields, ' AND ', 'w_');
@@ -65,14 +66,16 @@ class DataAccess
         $sqlOrder = $this->createOrderByStatement($table, $orderBy);
 
         $sql = 'SELECT ' . $sqlCols . ' FROM ' . self::quoteIdentifiers($table) . $sqlWhere . $sqlOrder;
-        $bind = $this->bindValues($fields, $params, array(), 'w_');
+        $bind = $this->bindValues($fields, $filter, array(), 'w_');
         return $this->run($sql, $bind);
     }
 
     /**
-     * @param string $table
-     * @param array $data
-     * @return int
+     * Run a <code>INSERT INTO</code> on a database table
+     *
+     * @param string $table table name the insert should run on
+     * @param array  $data  an associative array indexed with column names
+     * @return int return the number of affected rows
      * @throws PDOException
      */
     public function insert($table, $data)
@@ -105,13 +108,17 @@ class DataAccess
     }
 
     /**
-     * @param string $table
-     * @param array $data
-     * @param array $filter
-     * @return bool
+     * Update one or more rows in the database table
+     *
+     * @param string $table         name of the table in the database
+     * @param array  $data          an associative array indexed with column names and the values that should be updated
+     * @param array  $filter        an associative array of filter conditions. The key are the column name, the values
+     *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
+     *                              <code>['id'=>'1']</code>
+     * @return int number of affected rows
      * @throws PDOException
      */
-    public function update($table, $data, $filter=[])
+    public function update($table, $data, $filter = [])
     {
         // if no data to update or not key set = return false
         if ($data == null) { //} || !isset($filter[implode(',', array_flip($filter))])) {
@@ -132,15 +139,20 @@ class DataAccess
 
         $bind = $this->bindValues($fields, $data, array(), 'u_');
         $bind = $this->bindValues($whereFields, $filter, $bind, 'w_');
-        return (bool)$this->run($sql, $bind);
+        return $this->run($sql, $bind);
     }
 
     /**
-     * @param $table
-     * @param $filter
-     * @return bool
+     * Delete rows on a database table
+     *
+     * @param string $table         name of the database table
+     * @param array  $filter        an associative array of filter conditions. The key are the column name, the values
+     *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
+     *                              <code>['id'=>'1']</code>
+     *
+     * @return int number of affected rows
      */
-    public function delete($table, $filter=[])
+    public function delete($table, $filter = [])
     {
         $whereFields = $this->filterKeys($table, $filter);
         $escapedWhereFields = $this->quoteIdentifiers($whereFields);
@@ -152,6 +164,12 @@ class DataAccess
         return $this->run($sql, $bind);
     }
 
+    /**
+     * Quote one or an array of identifiers with backticks
+     *
+     * @param array|string $names one or more identifiers that should be quoted
+     * @return array|string quoted identifiers
+     */
     public static function quoteIdentifiers($names)
     {
         if (is_array($names)) {
@@ -164,9 +182,14 @@ class DataAccess
     }
 
     /**
-     * @param $table
-     * @param $orderBy
-     * @return string
+     * create a filtered* sql <code>ORDER BY</code> statement out of an string
+     * * \* filter the column name from the whitelist of allowed column names
+     *
+     * @see DataAccess::filter
+     * @param string $table   name of the table in the database
+     * @param string $orderBy the statement e.g.: <code>price ASC</code>
+     * @return string extracted <code>ORDER BY</code> statement e.g.: <code>ORDER BY price ASC</code>
+     * @throws PDOException
      */
     public function createOrderByStatement($table, $orderBy)
     {
@@ -183,9 +206,12 @@ class DataAccess
     }
 
     /**
-     * @param $table
-     * @param $params
-     * @return array
+     * filter the keys of an associative array as column names for a specific table
+     *
+     * @see DataAccess::filter
+     * @param string $table  name of a table in the database
+     * @param array  $params associative array indexed with column names
+     * @return array non associative array with the filtered column names as values
      * @throws PDOException
      */
     private function filterKeys($table, $params)
@@ -195,9 +221,18 @@ class DataAccess
     }
 
     /**
-     * @param $sql
-     * @param array $bind
-     * @return array|bool|int|\PDOStatement
+     * prepare and execute sql statement on the pdo. Run PDO::fetchAll on select, describe or pragma statements
+     *
+     * @see PDO::prepare
+     * @see PDO::execute
+     * @param string $sql  This must be a valid SQL statement for the target database server.
+     * @param array  $bind [optional]
+     *                     An array of values with as many elements as there are bound parameters in the SQL statement
+     *                     being executed
+     * @return array|int|\PDOStatement <ul>
+     *                     <li> associative array of results if sql statement is select, describe or pragma
+     *                     <li> the number of rows affected by a delete, insert, update or replace statement
+     *                     <li> the executed PDOStatement otherwise</ul>
      * @throws PDOException
      */
     public function run($sql, $bind = array())
@@ -217,11 +252,15 @@ class DataAccess
     }
 
     /**
-     * @param $table
-     * @param $params
-     * @return array
+     * filter an array of column names based on a whitelist queried from the database using <code>PRAGMA</code>,
+     * <code>DESCRIBE</code> or <code>SELECT column_name FROM information_schema.columns</code> depending on the
+     * PDO::ATTR_DRIVER_NAME
+     *
+     * @param string $table   name of the table
+     * @param array  $columns array of column names
+     * @return array filtered array of column names
      */
-    public function filter($table, $params)
+    public function filter($table, $columns)
     {
         $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
         $table = self::quoteIdentifiers($table);
@@ -241,16 +280,19 @@ class DataAccess
             foreach ($list as $record) {
                 $fields[] = $record[$key];
             }
-            return array_values(array_intersect($params, $fields));
+            return array_values(array_intersect($columns, $fields));
         }
         return array();
     }
 
     /**
-     * @param array $escapedFields
-     * @param string $glue
-     * @param string $keyPrefix
-     * @return string|false
+     * insert bind placeholders for a sql statement
+     *
+     * @param array  $escapedFields array with column names the index will use for placeholder and can be prefixed with
+     *                              $keyPrefix
+     * @param string $glue          the glue between the bind placeholders
+     * @param string $keyPrefix     prefix for placeholder names
+     * @return string|false statement with binded column placeholders
      */
     protected function implodeBindFields($escapedFields, $glue, $keyPrefix = '')
     {
@@ -271,13 +313,17 @@ class DataAccess
     }
 
     /**
-     * @param $fields
-     * @param $params
-     * @param array $bind
-     * @param string $keyPrefix
-     * @return array
+     * create bind array indexed with placeholder ids prefixed with $keyPrefix
+     *
+     * @param array  $fields        array with column names the index will use for placeholder and can be prefixed with
+     *                              $keyPrefix
+     * @param array  $params        associative array indexed with column names
+     * @param array  $bind          [output]
+     *                              associative array the results will be appended to
+     * @param string $keyPrefix     prefix for placeholder names
+     * @return array bind array
      */
-    protected function bindValues($fields, $params, $bind = array(), $keyPrefix = '')
+    protected function bindValues($fields, $params, $bind = [], $keyPrefix = '')
     {
         foreach ($fields as $key => $field) {
             $bind[':' . $keyPrefix . $key] = $params[$field];

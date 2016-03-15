@@ -135,9 +135,9 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $sec = '2``st';
         $data = [$first => '3', $sec => '4'];
 
-        $id = $this->dataAccess->insert('test`escp', $data);
+        $affectedRows = $this->dataAccess->insert('test`escp', $data);
 
-        $this->assertEquals(1, $id);
+        $this->assertEquals(1, $affectedRows);
         $result = $this->dataAccess->select('test`escp', [], [$first => '3']);
         $this->assertSame([$data], $result);
     }
@@ -148,9 +148,9 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $sec = '2``st';
         $data = [[$first => '3', $sec => '5'], [$first => '6', $sec => '8']];
 
-        $id = $this->dataAccess->insert('test`escp', $data);
+        $affectedRows = $this->dataAccess->insert('test`escp', $data);
 
-        $this->assertEquals(2, $id);
+        $this->assertEquals(2, $affectedRows);
         $result[] = $this->dataAccess->select('test`escp', [], [$first => $data[0][$first]]);
         $result[] = $this->dataAccess->select('test`escp', [], [$first => $data[1][$first]]);
         $this->assertSame([$data[0]], $result[0]);
@@ -229,7 +229,9 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     protected function setupTable()
     {
         $this->db->exec('CREATE TABLE IF NOT EXISTS books (
-							id int(11) NOT NULL,  title varchar(200) NOT NULL, price REAL NOT NULL);');
+							id int(11) NOT NULL PRIMARY KEY,  title varchar(200) NOT NULL, price REAL NOT NULL) ;');
+        $this->db->exec('ALTER TABLE books ADD PRIMARY KEY (id);');
+        $this->db->exec('ALTER TABLE books MODIFY id int(11) NOT NULL AUTO_INCREMENT;');
         $this->db->exec('INSERT INTO `books` (`id`, `title`, `price`) VALUES (1, "last", 2), (2, "first", 1.50);');
         $this->db->exec('INSERT INTO `users` (`id`,`email`, `password`) ' .
                 'VALUES (1, "user1", "pass1"), (2, "user2", "pass2");');
