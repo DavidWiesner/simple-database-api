@@ -10,9 +10,9 @@
          stopOnFailure="false"
          syntaxCheck="true"
          bootstrap="vendor/autoload.php">
-    <logging>
-        <log type="coverage-clover" target="clover.xml" />
-    </logging>
+    <!--<logging>-->
+        <!--<log type="coverage-clover" target="clover.xml" />-->
+    <!--</logging>-->
     <testsuites>
         <testsuite name="Slim Test Suite">
             <directory>./tests/</directory>
