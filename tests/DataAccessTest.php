@@ -1,6 +1,13 @@
 <?php
 use DBoho\IO\DataAccess;
 
+class PDOMock extends \PDO
+{
+    public function __construct()
+    {
+    }
+}
+
 /**
  * User: David Wiesner
  * Date: 11.03.16
@@ -205,7 +212,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $first = '1`st';
         $sec = '2``st';
 
-        $id = $this->dataAccess->delete('test`escp', [$first => 0, $sec => 0], []);
+        $id = $this->dataAccess->delete('test`escp', [$first => 0, $sec => 0]);
 
         $this->assertEquals(0, $id);
         $result = $this->dataAccess->select('test`escp');
@@ -270,15 +277,16 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 
     /**
      * https://blogs.kent.ac.uk/webdev/2011/07/14/phpunit-and-unserialized-pdo-instances/
-     * @backupGlobals disabled
+     * @backupGlobals          disabled
      * @backupStaticAttributes disabled
      */
     public function testFilterMySQL()
     {
-        $db = $this->getMockBuilder(\PDO::class)->disableOriginalConstructor()->getMock();
+        $db = $this->getMockBuilder(\PDOMock::class)->disableOriginalConstructor()->getMock();
         $stmt = $this->getMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('mysql');
         $db->expects($this->once())->method('prepare')->with('DESCRIBE `books`;')->willReturn($stmt);
+        /** @var PDO $db */
         $da = new DataAccess($db);
 
         $da->filter('books', array('title'));
@@ -286,17 +294,18 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 
     /**
      * https://blogs.kent.ac.uk/webdev/2011/07/14/phpunit-and-unserialized-pdo-instances/
-     * @backupGlobals disabled
+     * @backupGlobals          disabled
      * @backupStaticAttributes disabled
      */
     public function testFilterUnknownDB()
     {
-        $db = $this->getMockBuilder(\PDO::class)->disableOriginalConstructor()->getMock();
+        $db = $this->getMockBuilder(\PDOMock::class)->disableOriginalConstructor()->getMock();
         $stmt = $this->getMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('unknownDB');
         $db->expects($this->once())->method('prepare')
                 ->with('SELECT column_name FROM information_schema.columns WHERE table_name = `books`;')
                 ->willReturn($stmt);
+        /** @var PDO $db */
         $da = new DataAccess($db);
 
         $da->filter('books', array('title'));
