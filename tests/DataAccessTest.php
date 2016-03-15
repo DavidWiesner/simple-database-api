@@ -129,7 +129,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     }
 
 
-    public function testAddOne()
+    public function testInsertOne()
     {
         $first = '1`st';
         $sec = '2``st';
@@ -142,7 +142,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame([$data], $result);
     }
 
-    public function testAddMultiple()
+    public function testInsertMultiple()
     {
         $first = '1`st';
         $sec = '2``st';
@@ -156,6 +156,15 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame([$data[0]], $result[0]);
         $this->assertSame([$data[1]], $result[1]);
     }
+
+    /**
+     * @expectedException \PDOException
+     */
+    public function testInsertNoData()
+    {
+        $this->dataAccess->insert('table', null);
+    }
+
 
     public function testUpdateOne()
     {
@@ -180,6 +189,15 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $id);
         $result = $this->dataAccess->select('test`escp', [], [$first => 0, $sec => 0]);
         $this->assertSame([[$first => '0', $sec => '0'], [$first => '0', $sec => '0']], $result);
+    }
+
+
+    /**
+     * @expectedException \PDOException
+     */
+    public function testUpdateNoData()
+    {
+        $this->dataAccess->update('table', null);
     }
 
     public function testDeleteNone()
@@ -208,14 +226,70 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 
     public function testDeleteAll()
     {
-        $first = '1`st';
-        $sec = '2``st';
 
         $id = $this->dataAccess->delete('test`escp');
 
         $this->assertEquals(2, $id);
         $result = $this->dataAccess->select('test`escp');
         $this->assertSame([], $result);
+    }
+
+    public function testOrderByDefault()
+    {
+        $first = '1`st';
+        $stmt = $this->dataAccess->createOrderByStatement('test`escp', $first);
+        $this->assertEquals('ORDER BY `1``st`', trim($stmt));
+    }
+
+    public function testOrderByAsc()
+    {
+        $first = '1`st';
+        $stmt = $this->dataAccess->createOrderByStatement('test`escp', $first . ' ASC');
+        $this->assertEquals('ORDER BY `1``st` ASC', trim($stmt));
+    }
+
+    public function testOrderByDesc()
+    {
+        $first = '1`st';
+        $stmt = $this->dataAccess->createOrderByStatement('test`escp', $first . ' DESC');
+        $this->assertEquals('ORDER BY `1``st` DESC', trim($stmt));
+    }
+
+    public function testRunReturnStatement()
+    {
+        $stmt = $this->dataAccess->run('ALTER TABLE books RENAME TO dvds');
+        $this->assertInstanceOf(PDOStatement::class, $stmt);
+    }
+
+    public function testRunBindFailed()
+    {
+        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+        $stmt = $this->dataAccess->run('ALTER TABLE books RENAME TO boooks', [':unkown' => '1']);
+        $this->assertEquals(false, $stmt);
+    }
+
+    public function testFilterMySQL()
+    {
+        $db = $this->getMockBuilder(\PDO::class)->disableOriginalConstructor()->getMock();
+        $stmt = $this->getMock(PDOStatement::class);
+        $db->expects($this->once())->method('getAttribute')->willReturn('mysql');
+        $db->expects($this->once())->method('prepare')->with('DESCRIBE `books`;')->willReturn($stmt);
+        $da = new DataAccess($db);
+
+        $da->filter('books', array('title'));
+    }
+
+    public function testFilterUnknownDB()
+    {
+        $db = $this->getMockBuilder(\PDO::class)->disableOriginalConstructor()->getMock();
+        $stmt = $this->getMock(PDOStatement::class);
+        $db->expects($this->once())->method('getAttribute')->willReturn('unknownDB');
+        $db->expects($this->once())->method('prepare')
+                ->with('SELECT column_name FROM information_schema.columns WHERE table_name = `books`;')
+                ->willReturn($stmt);
+        $da = new DataAccess($db);
+
+        $da->filter('books', array('title'));
     }
 
     protected function setUp()

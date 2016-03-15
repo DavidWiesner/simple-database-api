@@ -183,7 +183,7 @@ class DataAccess
             return $orderBy;
         }
         $direction = '';
-        if (1 === preg_match('/\s*(.*)\s*(asc|desc|default)/i', $orderBy, $m)) {
+        if (1 === preg_match('/\s*(.*?)\s*(asc|desc|default)/i', $orderBy, $m)) {
             $orderBy = $m[1];
             $direction = strtoupper($m[2]);
         }
@@ -215,10 +215,11 @@ class DataAccess
      * @param array  $bind [optional]
      *                     An array of values with as many elements as there are bound parameters in the SQL statement
      *                     being executed
-     * @return array|int|\PDOStatement <ul>
+     * @return array|int|\PDOStatement|false <ul>
      *                     <li> associative array of results if sql statement is select, describe or pragma
      *                     <li> the number of rows affected by a delete, insert, update or replace statement
      *                     <li> the executed PDOStatement otherwise</ul>
+     *                     <li> false only if execution failed and the PDO::ERRMODE_EXCEPTION was unset</ul>
      * @throws PDOException
      */
     public function run($sql, $bind = array())
@@ -261,14 +262,14 @@ class DataAccess
             $key = 'column_name';
         }
 
-        if (false !== ($list = $this->run($sql))) {
-            $fields = array();
+        if (is_array($list = $this->run($sql))) {
+            $fields = [];
             foreach ($list as $record) {
                 $fields[] = $record[$key];
             }
             return array_values(array_intersect($columns, $fields));
         }
-        return array();
+        return [];
     }
 
     /**
