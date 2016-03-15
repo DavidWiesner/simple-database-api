@@ -268,6 +268,11 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(false, $stmt);
     }
 
+    /**
+     * https://blogs.kent.ac.uk/webdev/2011/07/14/phpunit-and-unserialized-pdo-instances/
+     * @backupGlobals disabled
+     * @backupStaticAttributes disabled
+     */
     public function testFilterMySQL()
     {
         $db = $this->getMockBuilder(\PDO::class)->disableOriginalConstructor()->getMock();
@@ -279,6 +284,11 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $da->filter('books', array('title'));
     }
 
+    /**
+     * https://blogs.kent.ac.uk/webdev/2011/07/14/phpunit-and-unserialized-pdo-instances/
+     * @backupGlobals disabled
+     * @backupStaticAttributes disabled
+     */
     public function testFilterUnknownDB()
     {
         $db = $this->getMockBuilder(\PDO::class)->disableOriginalConstructor()->getMock();
