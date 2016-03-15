@@ -1,9 +1,16 @@
 # DBoho\IO\DataAccess
+[![Build Status](https://travis-ci.org/DavidWiesner/simple-database-api.svg?branch=master)](https://travis-ci.org/DavidWiesner/simple-database-api)
+
 A simple API for Database Access
 
 ## Features
  * Simple API
  * prevent SQL injection with automatic whitelist column filter and pdo prepared statements
+
+## Install with Composer
+```bash
+$ composer require dboho/simple-database-api
+```
 
 ## Usage
 ```php
