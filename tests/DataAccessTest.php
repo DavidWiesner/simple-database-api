@@ -27,7 +27,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('`2````st`', $secEsc);
     }
 
-    public function testGetWithoutParameter()
+    public function testSelectWithoutParameter()
     {
 
         $data = $this->dataAccess->select('books');
@@ -38,44 +38,44 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         ], $data);
     }
 
-    public function testGetOneColumnString()
+    public function testSelectOneColumnString()
     {
 
         $ids = $this->dataAccess->select('test`escp', '1`st');
         $prices = $this->dataAccess->select('books', 'price');
 
-        $this->assertSame([['1`st' => '1'],['1`st' => '2']], $ids);
-        $this->assertSame([['price' => '2.0'],['price' => '1.5']], $prices);
+        $this->assertSame([['1`st' => '1'], ['1`st' => '2']], $ids);
+        $this->assertSame([['price' => '2.0'], ['price' => '1.5']], $prices);
     }
 
-    public function testGetColumnArrayOne()
+    public function testSelectColumnArrayOne()
     {
 
         $ids = $this->dataAccess->select('test`escp', ['1`st']);
 
-        $this->assertSame([['1`st' => '1'],['1`st' => '2']], $ids);
+        $this->assertSame([['1`st' => '1'], ['1`st' => '2']], $ids);
     }
 
-    public function testGetColumnArrayMore()
+    public function testSelectColumnArrayMore()
     {
 
         $ids = $this->dataAccess->select('test`escp', ['1`st']);
         $prices = $this->dataAccess->select('books', array('price', 'id'));
 
-        $this->assertSame([['1`st' => '1'],['1`st' => '2']], $ids);
-        $this->assertSame([['price' => '2.0', 'id'=> '1'],['price' => '1.5', 'id'=> '2']], $prices);
+        $this->assertSame([['1`st' => '1'], ['1`st' => '2']], $ids);
+        $this->assertSame([['price' => '2.0', 'id' => '1'], ['price' => '1.5', 'id' => '2']], $prices);
     }
 
-    public function testGetColumnArrayOrder()
+    public function testSelectColumnArrayOrder()
     {
         $prices_id = $this->dataAccess->select('books', array('price', 'id'));
         $id_prices = $this->dataAccess->select('books', array('id', 'price'));
 
-        $this->assertSame([['price' => '2.0', 'id'=> '1'],['price' => '1.5', 'id'=> '2']], $prices_id);
-        $this->assertSame([['id'=> '1', 'price' => '2.0'],['id'=> '2', 'price' => '1.5']], $id_prices);
+        $this->assertSame([['price' => '2.0', 'id' => '1'], ['price' => '1.5', 'id' => '2']], $prices_id);
+        $this->assertSame([['id' => '1', 'price' => '2.0'], ['id' => '2', 'price' => '1.5']], $id_prices);
     }
 
-    public function testGetWithOneParameter()
+    public function testSelectWithOneParameter()
     {
 
         $data = $this->dataAccess->select('books', [], ['id' => '1']);
@@ -83,7 +83,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame([['id' => '1', 'title' => 'last', 'price' => '2.0']], $data);
     }
 
-    public function testGetOneEscapedParameter()
+    public function testSelectOneEscapedParameter()
     {
 
         $data = $this->dataAccess->select('test`escp', [], ['1`st' => '1']);
@@ -91,14 +91,14 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame([['1`st' => '1', '2``st' => '2']], $data);
     }
 
-    public function testGetTwoParameter()
+    public function testSelectTwoParameter()
     {
         $data = $this->dataAccess->select('books', [], ['id' => '1', 'price' => '2']);
 
         $this->assertsame([['id' => '1', 'title' => 'last', 'price' => '2.0']], $data);
     }
 
-    public function testGetAllSortedNative()
+    public function testSelectAllSortedNative()
     {
         $first = '1`st';
         $sec = '2``st';
@@ -113,7 +113,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     }
 
 
-    public function testGetAllSorted()
+    public function testSelectAllSorted()
     {
         $first = '1`st';
         $sec = '2``st';
@@ -121,8 +121,8 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $sortedSecond = [[$first => '2', $sec => '1'], [$first => '1', $sec => '2']];
         $sortedFirst = [[$first => '1', $sec => '2'], [$first => '2', $sec => '1']];
 
-        $resultFirst = $this->dataAccess->getAll('test`escp', ['sort' => $first]);
-        $resultSecond = $this->dataAccess->getAll('test`escp', ['sort' => $sec]);
+        $resultFirst = $this->dataAccess->select('test`escp', [], [], $first);
+        $resultSecond = $this->dataAccess->select('test`escp', [], [], $sec);
 
         $this->assertSame($sortedFirst, $resultFirst);
         $this->assertSame($sortedSecond, $resultSecond);
@@ -167,7 +167,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(true, $id);
         $result = $this->dataAccess->select('test`escp', [], [$sec => 0]);
 
-        $this->assertSame([[$first=>'1', $sec=>'0']], $result);
+        $this->assertSame([[$first => '1', $sec => '0']], $result);
     }
 
     public function testUpdateAll()
@@ -179,7 +179,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(true, $id);
         $result = $this->dataAccess->select('test`escp', [], [$first => 0, $sec => 0]);
-        $this->assertSame([[$first=>'0', $sec=>'0'], [$first=>'0', $sec=>'0']], $result);
+        $this->assertSame([[$first => '0', $sec => '0'], [$first => '0', $sec => '0']], $result);
     }
 
     public function testDeleteNone()
@@ -191,7 +191,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(0, $id);
         $result = $this->dataAccess->select('test`escp');
-        $this->assertSame([[$first=>'1', $sec=>'2'], [$first=>'2', $sec=>'1']], $result);
+        $this->assertSame([[$first => '1', $sec => '2'], [$first => '2', $sec => '1']], $result);
     }
 
     public function testDeleteOne()
@@ -203,7 +203,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(1, $id);
         $result = $this->dataAccess->select('test`escp');
-        $this->assertSame([[$first=>'2', $sec=>'1']], $result);
+        $this->assertSame([[$first => '2', $sec => '1']], $result);
     }
 
     public function testDeleteAll()

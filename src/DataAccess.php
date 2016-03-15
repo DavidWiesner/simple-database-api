@@ -25,19 +25,6 @@ class DataAccess
     }
 
     /**
-     * @param $table
-     * @param $params
-     * @return array
-     * @throws PDOException
-     * @deprecated To be removed soon, use select instead
-     */
-    public function getAll($table, $params)
-    {
-        $orderBy = isset($params['sort']) ? $params['sort'] : '';
-        return $this->select($table, [], $params, $orderBy);
-    }
-
-    /**
      * Run a <code>SELECT</code> statement on a database table.
      *
      * @param string       $table   table name the select should work on
@@ -120,8 +107,7 @@ class DataAccess
      */
     public function update($table, $data, $filter = [])
     {
-        // if no data to update or not key set = return false
-        if ($data == null) { //} || !isset($filter[implode(',', array_flip($filter))])) {
+        if ($data == null) {
             throw new PDOException('empty request');
         }
 
