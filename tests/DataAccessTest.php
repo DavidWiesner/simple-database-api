@@ -332,6 +332,4 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 							INSERT INTO `test``escp` (`1``st`, `2````st`) VALUES (1,2), (2, 1)');
 
     }
-
-
 }

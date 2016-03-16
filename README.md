@@ -1,5 +1,6 @@
 # DBoho\IO\DataAccess
 [![Build Status](https://travis-ci.org/DavidWiesner/simple-database-api.svg?branch=master)](https://travis-ci.org/DavidWiesner/simple-database-api)
+[![Coverage Status](https://coveralls.io/repos/github/DavidWiesner/simple-database-api/badge.svg?branch=master)](https://coveralls.io/github/DavidWiesner/simple-database-api?branch=master)
 
 A simple API for Database Access
 
