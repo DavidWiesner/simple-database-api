@@ -142,9 +142,9 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $sec = '2``st';
         $data = [$first => '3', $sec => '4'];
 
-        $affectedRows = $this->dataAccess->insert('test`escp', $data);
+        $lastInsertId = $this->dataAccess->insert('test`escp', $data);
 
-        $this->assertEquals(1, $affectedRows);
+        $this->assertEquals(3, $lastInsertId);
         $result = $this->dataAccess->select('test`escp', [], [$first => '3']);
         $this->assertSame([$data], $result);
     }
@@ -155,9 +155,9 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $sec = '2``st';
         $data = [[$first => '3', $sec => '5'], [$first => '6', $sec => '8']];
 
-        $affectedRows = $this->dataAccess->insert('test`escp', $data);
+        $lastInsertId = $this->dataAccess->insert('test`escp', $data);
 
-        $this->assertEquals(2, $affectedRows);
+        $this->assertEquals(4, $lastInsertId);
         $result[] = $this->dataAccess->select('test`escp', [], [$first => $data[0][$first]]);
         $result[] = $this->dataAccess->select('test`escp', [], [$first => $data[1][$first]]);
         $this->assertSame([$data[0]], $result[0]);

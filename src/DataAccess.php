@@ -62,7 +62,7 @@ class DataAccess
      *
      * @param string $table table name the insert should run on
      * @param array  $data  an associative array indexed with column names
-     * @return int return the number of affected rows
+     * @return int|false return last insert id or false
      * @throws PDOException
      */
     public function insert($table, $data)
@@ -90,8 +90,11 @@ class DataAccess
 
         $sqlCols = ' (' . implode($escapedFields, ', ') . ')';
         $sql = 'INSERT INTO ' . self::quoteIdentifiers($table) . $sqlCols . ' VALUES ' . $insertPlaceholder . ';';
-
-        return $this->run($sql, $insertValues);
+        if($this->run($sql, $insertValues)){
+            return $this->pdo->lastInsertId();
+        } else {
+            return false;
+        }
     }
 
     /**
