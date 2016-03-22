@@ -34,8 +34,8 @@ class DataAccess
      *                              <code>['title'=>'Simple Dataaccess', 'price'=>'10.0']</code>
      * @param string       $orderBy columns the result should be ordered by. For now (see Issue #3)only ascending is
      *                              supported
-     * @return array returns an array containing all rows in the result set. Each row is an associative array indexed
-     *                              with the column names
+     * @return array returns an array containing all rows in the result set. Each row is an associative array
+     *                              indexed with the column names
      * @throws PDOException
      */
     public function select($table, $cols = [], $filter = [], $orderBy = '')
@@ -67,17 +67,17 @@ class DataAccess
      */
     public function insert($table, $data)
     {
-        if ($data == null or !is_array($data)) {
-            throw new PDOException('empty request');
-        }
-
-        $isMultiple = is_array($data[array_keys($data)[0]]);
+        $isMultiple = $data !== null && is_array($data) && is_array($data[array_keys($data)[0]]);
         if (!$isMultiple) {
             $data = [$data];
         }
         $requestFields = $data[0];
 
         $fields = $this->filterKeys($table, $requestFields);
+        if (count($fields) === 0) {
+            throw new PDOException('empty request');
+        }
+
         $escapedFields = $this->quoteIdentifiers($fields);
         $fieldCount = count($escapedFields);
         $insertPlaceholder = '(' . implode(',', array_fill(0, $fieldCount, '?')) . ')';
@@ -90,11 +90,8 @@ class DataAccess
 
         $sqlCols = ' (' . implode($escapedFields, ', ') . ')';
         $sql = 'INSERT INTO ' . self::quoteIdentifiers($table) . $sqlCols . ' VALUES ' . $insertPlaceholder . ';';
-        if ($this->run($sql, $insertValues)) {
-            return $this->pdo->lastInsertId();
-        } else {
-            return false;
-        }
+        $this->run($sql, $insertValues);
+        return $this->pdo->lastInsertId();
     }
 
     /**
@@ -105,16 +102,16 @@ class DataAccess
      * @param array  $filter        an associative array of filter conditions. The key are the column name, the values
      *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
      *                              <code>['id'=>'1']</code>
-     * @return int number of affected rows
+     * @return int|false number of affected rows or false if update failed
      * @throws PDOException
      */
     public function update($table, $data, $filter = [])
     {
-        if ($data == null) {
-            throw new PDOException('empty request');
-        }
 
         $fields = $this->filterKeys($table, $data);
+        if (count($fields) === 0) {
+            throw new PDOException('empty request');
+        }
         $escapedFields = $this->quoteIdentifiers($fields);
         $statement = $this->implodeBindFields($escapedFields, ',', 'u_');
         $sets = ' SET ' . $statement;
@@ -139,7 +136,7 @@ class DataAccess
      *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
      *                              <code>['id'=>'1']</code>
      *
-     * @return int number of affected rows
+     * @return int|false number of affected rows or false if delete statement failed
      */
     public function delete($table, $filter = [])
     {
@@ -205,6 +202,9 @@ class DataAccess
      */
     private function filterKeys($table, $params)
     {
+        if (!is_array($params)) {
+            return [];
+        }
         $params = array_keys($params);
         return $this->filter($table, $params);
     }
@@ -218,18 +218,19 @@ class DataAccess
      * @param array  $bind [optional]
      *                     An array of values with as many elements as there are bound parameters in the SQL statement
      *                     being executed
-     * @return array|int|\PDOStatement|false <ul>
+     * @param bool   $shouldThrow if throw PDOException if prepare or execute failed otherwise return false (default true )
+     * @return array|false|int|\PDOStatement <ul>
      *                     <li> associative array of results if sql statement is select, describe or pragma
      *                     <li> the number of rows affected by a delete, insert, update or replace statement
      *                     <li> the executed PDOStatement otherwise</ul>
      *                     <li> false only if execution failed and the PDO::ERRMODE_EXCEPTION was unset</ul>
-     * @throws PDOException
+     * @throws PDOException if prepare or execute will fail and $shouldThrow is True
      */
-    public function run($sql, $bind = array())
+    public function run($sql, $bind = array(), $shouldThrow = true)
     {
         $sql = trim($sql);
         $statement = $this->pdo->prepare($sql);
-        if ($statement->execute($bind) !== false) {
+        if ($statement !== false and ($statement->execute($bind) !== false)) {
             if (preg_match('/^(select|describe|pragma) /i', $sql)) {
                 return $statement->fetchAll(PDO::FETCH_ASSOC);
             } elseif (preg_match('/^(delete|insert|update|replace) /i', $sql)) {
@@ -237,6 +238,9 @@ class DataAccess
             } else {
                 return $statement;
             }
+        }
+        if ($shouldThrow) {
+            throw new PDOException($this->pdo->errorCode() . ' ' . ($statement === false ? 'prepare' : 'execute') . ' failed');
         }
         return false;
     }
@@ -252,27 +256,12 @@ class DataAccess
      */
     public function filter($table, $columns)
     {
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        $table = self::quoteIdentifiers($table);
-        if ($driver == 'sqlite') {
-            $sql = 'PRAGMA table_info(' . $table . ');';
-            $key = 'name';
-        } elseif ($driver == 'mysql') {
-            $sql = 'DESCRIBE ' . $table . ';';
-            $key = 'Field';
-        } else {
-            $sql = 'SELECT column_name FROM information_schema.columns WHERE table_name = ' . $table . ';';
-            $key = 'column_name';
+        if (!is_array($columns)) {
+            return [];
         }
 
-        if (is_array($list = $this->run($sql))) {
-            $fields = [];
-            foreach ($list as $record) {
-                $fields[] = $record[$key];
-            }
-            return array_values(array_intersect($columns, $fields));
-        }
-        return [];
+        $fields = $this->getTableColumns($table);
+        return array_values(array_intersect($columns, $fields));
     }
 
     /**
@@ -319,5 +308,35 @@ class DataAccess
             $bind[':' . $keyPrefix . $key] = $params[$field];
         }
         return $bind;
+    }
+
+    /**
+     * Query the available columns for a database table
+     * @param string $table name of database table
+     * @return array of column names
+     */
+    public function getTableColumns($table)
+    {
+        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $table = self::quoteIdentifiers($table);
+        if ($driver == 'sqlite') {
+            $sql = 'PRAGMA table_info(' . $table . ');';
+            $key = 'name';
+        } elseif ($driver == 'mysql') {
+            $sql = 'DESCRIBE ' . $table . ';';
+            $key = 'Field';
+        } else {
+            $sql = 'SELECT column_name FROM information_schema.columns WHERE table_name = ' . $table . ';';
+            $key = 'column_name';
+        }
+
+        $fields = [];
+        if (is_array($list = $this->run($sql, [], false))) {
+            foreach ($list as $record) {
+                $fields[] = $record[$key];
+            }
+            return $fields;
+        }
+        return $fields;
     }
 }

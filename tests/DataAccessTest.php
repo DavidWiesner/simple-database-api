@@ -1,5 +1,10 @@
 <?php
+namespace DBohoTest\IO;
 use DBoho\IO\DataAccess;
+use PDO;
+use PDOStatement;
+use PHPUnit_Framework_TestCase;
+use PDOException;
 
 class PDOMock extends \PDO
 {
@@ -18,11 +23,11 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     /**
      * @var PDO
      */
-    private $db;
+    protected $db;
     /**
      * @var DataAccess
      */
-    private $dataAccess;
+    protected $dataAccess;
 
     public function testEscapeIdentifiers()
     {
@@ -32,6 +37,16 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals('`1``st`', $firstEsc);
         $this->assertEquals('`2````st`', $secEsc);
+    }
+
+
+    /**
+     * @expectedException PDOException
+     * @expectedExceptionMessageRegExp 'no such table.* unknown'
+     */
+    public function testUnknownTable()
+    {
+        return $this->dataAccess->select('unknown');
     }
 
     public function testSelectWithoutParameter()
@@ -105,6 +120,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertsame([['id' => '1', 'title' => 'last', 'price' => '2.0']], $data);
     }
 
+
     public function testSelectAllSortedNative()
     {
         $first = '1`st';
@@ -135,7 +151,6 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame($sortedSecond, $resultSecond);
     }
 
-
     public function testInsertOne()
     {
         $first = '1`st';
@@ -148,6 +163,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $result = $this->dataAccess->select('test`escp', [], [$first => '3']);
         $this->assertSame([$data], $result);
     }
+
 
     public function testInsertFilterUnknownColumn()
     {
@@ -163,6 +179,15 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame([$data], $result);
     }
 
+    /**
+     * @expectedException PDOException
+     */
+    public function testInsertOnlyUnknownColumn()
+    {
+        $oddData = ['unknownColumn' => 'none'];
+
+        $this->dataAccess->insert('test`escp', $oddData);
+    }
 
     public function testInsertMultiple()
     {
@@ -179,6 +204,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame([$data[1]], $result[1]);
     }
 
+
     /**
      * @expectedException \PDOException
      */
@@ -186,7 +212,6 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     {
         $this->dataAccess->insert('table', null);
     }
-
 
     public function testUpdateOne()
     {
@@ -201,6 +226,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame([[$first => '1', $sec => '0']], $result);
     }
 
+
     public function testUpdateAll()
     {
         $first = '1`st';
@@ -212,7 +238,6 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $result = $this->dataAccess->select('test`escp', [], [$first => 0, $sec => 0]);
         $this->assertSame([[$first => '0', $sec => '0'], [$first => '0', $sec => '0']], $result);
     }
-
 
     /**
      * @expectedException \PDOException
@@ -277,17 +302,28 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('ORDER BY `1``st` DESC', trim($stmt));
     }
 
+
+
     public function testRunReturnStatement()
     {
         $stmt = $this->dataAccess->run('ALTER TABLE books RENAME TO dvds');
         $this->assertInstanceOf(PDOStatement::class, $stmt);
     }
 
+    /**
+     * @expectedException PDOException
+     */
     public function testRunBindFailed()
     {
         $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
-        $stmt = $this->dataAccess->run('ALTER TABLE books RENAME TO boooks', [':unkown' => '1']);
-        $this->assertEquals(false, $stmt);
+        $this->dataAccess->run('ALTER TABLE books RENAME TO boooks', [':unkown' => '1']);
+    }
+
+    public function testRunBindFailedSilent()
+    {
+        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+        $result = $this->dataAccess->run('ALTER TABLE books RENAME TO boooks', [':unkown' => '1'], false);
+        $this->assertEquals(false, $result);
     }
 
     /**
@@ -297,7 +333,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testFilterMySQL()
     {
-        $db = $this->getMockBuilder(\PDOMock::class)->getMock();
+        $db = $this->getMockBuilder(PDOMock::class)->getMock();
         $stmt = $this->getMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('mysql');
         $db->expects($this->once())->method('prepare')->with('DESCRIBE `books`;')->willReturn($stmt);
@@ -314,7 +350,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
      */
     public function testFilterUnknownDB()
     {
-        $db = $this->getMockBuilder(\PDOMock::class)->getMock();
+        $db = $this->getMockBuilder(PDOMock::class)->getMock();
         $stmt = $this->getMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('unknownDB');
         $db->expects($this->once())->method('prepare')
@@ -324,6 +360,13 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $da = new DataAccess($db);
 
         $da->filter('books', array('title'));
+    }
+
+    public function testFilterNoArray()
+    {
+        $result = $this->dataAccess->filter('books', 'noArray');
+
+        $this->assertSame([], $result);
     }
 
     protected function setUp()
