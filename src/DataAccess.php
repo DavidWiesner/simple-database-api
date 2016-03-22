@@ -72,25 +72,25 @@ class DataAccess
         }
 
         $isMultiple = is_array($data[array_keys($data)[0]]);
-        $requestFields = $isMultiple ? $data[0] : $data;
+        if (!$isMultiple) {
+            $data = [$data];
+        }
+        $requestFields = $data[0];
 
         $fields = $this->filterKeys($table, $requestFields);
         $escapedFields = $this->quoteIdentifiers($fields);
         $fieldCount = count($escapedFields);
         $insertPlaceholder = '(' . implode(',', array_fill(0, $fieldCount, '?')) . ')';
-        if ($isMultiple) {
-            $insertPlaceholder = implode(',', array_fill(0, count($data), $insertPlaceholder));
-            $insertValues = array();
-            foreach ($data as $key => $values) {
-                $insertValues = array_merge($insertValues, array_values($values));
-            }
-        } else {
-            $insertValues = array_values($data);
+        $insertPlaceholder = implode(',', array_fill(0, count($data), $insertPlaceholder));
+        $insertValues = array();
+        foreach ($data as $key => $values) {
+            $filteredValues = array_intersect_key($values, array_flip($fields));
+            $insertValues = array_merge($insertValues, array_values($filteredValues));
         }
 
         $sqlCols = ' (' . implode($escapedFields, ', ') . ')';
         $sql = 'INSERT INTO ' . self::quoteIdentifiers($table) . $sqlCols . ' VALUES ' . $insertPlaceholder . ';';
-        if($this->run($sql, $insertValues)){
+        if ($this->run($sql, $insertValues)) {
             return $this->pdo->lastInsertId();
         } else {
             return false;
