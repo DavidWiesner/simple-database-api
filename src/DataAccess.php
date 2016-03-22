@@ -36,7 +36,7 @@ class DataAccess
      *                              supported
      * @return array returns an array containing all rows in the result set. Each row is an associative array
      *                              indexed with the column names
-     * @throws PDOException
+     * @throws PDOException on select statement failed
      */
     public function select($table, $cols = [], $filter = [], $orderBy = '')
     {
@@ -62,8 +62,8 @@ class DataAccess
      *
      * @param string $table table name the insert should run on
      * @param array  $data  an associative array indexed with column names
-     * @return int|false return last insert id or false
-     * @throws PDOException
+     * @return int return last insert id or false
+     * @throws PDOException on insert failed
      */
     public function insert($table, $data)
     {
@@ -102,8 +102,8 @@ class DataAccess
      * @param array  $filter        an associative array of filter conditions. The key are the column name, the values
      *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
      *                              <code>['id'=>'1']</code>
-     * @return int|false number of affected rows or false if update failed
-     * @throws PDOException
+     * @return int number of affected rows or false if update failed
+     * @throws PDOException on update failed
      */
     public function update($table, $data, $filter = [])
     {
@@ -136,7 +136,8 @@ class DataAccess
      *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
      *                              <code>['id'=>'1']</code>
      *
-     * @return int|false number of affected rows or false if delete statement failed
+     * @return int number of affected rows
+     * @throws PDOException on delete failed
      */
     public function delete($table, $filter = [])
     {
