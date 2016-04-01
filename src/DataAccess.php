@@ -13,7 +13,7 @@ class DataAccess
     /**
      * @var \PDO
      */
-    private $pdo;
+    protected $pdo;
 
     /**
      * @param \PDO $pdo
@@ -62,7 +62,7 @@ class DataAccess
      *
      * @param string $table table name the insert should run on
      * @param array  $data  an associative array indexed with column names
-     * @return int return last insert id or false
+     * @return int return number of inserted rows or false
      * @throws PDOException on insert failed
      */
     public function insert($table, $data)
@@ -90,8 +90,7 @@ class DataAccess
 
         $sqlCols = ' (' . implode($escapedFields, ', ') . ')';
         $sql = 'INSERT INTO ' . self::quoteIdentifiers($table) . $sqlCols . ' VALUES ' . $insertPlaceholder . ';';
-        $this->run($sql, $insertValues);
-        return $this->pdo->lastInsertId();
+        return $this->run($sql, $insertValues);
     }
 
     /**
@@ -339,5 +338,18 @@ class DataAccess
             return $fields;
         }
         return $fields;
+    }
+
+    /**
+     * Returns the ID of the last inserted row or sequence value
+     *
+     * @see \PDO::lastInsertId()
+     * @param string $name [optional]
+     *                     Name of the sequence object from which the ID should be returned.
+     * @return string last insert id
+     */
+    public function getLastInsertId($name = null)
+    {
+        return $this->pdo->lastInsertId($name);
     }
 }
