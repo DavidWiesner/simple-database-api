@@ -317,7 +317,7 @@ class DataAccess
      */
     public function getTableColumns($table)
     {
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driver = $this->getDriverName();
         $table = self::quoteIdentifiers($table);
         if ($driver == 'sqlite') {
             $sql = 'PRAGMA table_info(' . $table . ');';
@@ -351,5 +351,15 @@ class DataAccess
     public function getLastInsertId($name = null)
     {
         return $this->pdo->lastInsertId($name);
+    }
+
+    /**
+     * Returns the name of the driver
+     * @return string Driver name
+     */
+    public function getDriverName()
+    {
+        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        return $driver;
     }
 }
