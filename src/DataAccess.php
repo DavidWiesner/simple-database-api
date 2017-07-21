@@ -302,7 +302,7 @@ class DataAccess
      * @param string $keyPrefix     prefix for placeholder names
      * @return array bind array
      */
-    protected function bindValues($fields, $params, $bind = [], $keyPrefix = '')
+    public function bindValues($fields, $params, $bind = [], $keyPrefix = '')
     {
         foreach ($fields as $key => $field) {
             $bind[':' . $keyPrefix . $key] = $params[$field];
