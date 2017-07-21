@@ -200,7 +200,7 @@ class DataAccess
      * @return array non associative array with the filtered column names as values
      * @throws PDOException
      */
-    private function filterKeys($table, $params)
+    public function filterKeys($table, $params)
     {
         if (!is_array($params)) {
             return [];
@@ -273,7 +273,7 @@ class DataAccess
      * @param string $keyPrefix     prefix for placeholder names
      * @return string|false statement with binded column placeholders
      */
-    protected function implodeBindFields($escapedFields, $glue, $keyPrefix = '')
+    public function implodeBindFields($escapedFields, $glue, $keyPrefix = '')
     {
         if (count($escapedFields) == 0) {
             return false;
