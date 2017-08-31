@@ -10,10 +10,12 @@ use PDOException;
  */
 class DataAccess
 {
+    private $driver;
     /**
      * @var \PDO
      */
     protected $pdo;
+    private $quote = '`';
 
     /**
      * @param \PDO $pdo
@@ -22,17 +24,24 @@ class DataAccess
     {
         $this->pdo = $pdo;
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($this->driver === 'pgsql') {
+            $this->quote = '"';
+        } else {
+            $this->quote = '`';
+        }
+
     }
 
     /**
      * Run a <code>SELECT</code> statement on a database table.
      *
-     * @param string       $table   table name the select should work on
-     * @param array|string $cols    the name or the array of column names that should be selected
-     * @param array        $filter  an associative array of filter conditions. The key are the column name, the values
+     * @param string $table table name the select should work on
+     * @param array|string $cols the name or the array of column names that should be selected
+     * @param array $filter an associative array of filter conditions. The key are the column name, the values
      *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
      *                              <code>['title'=>'Simple Dataaccess', 'price'=>'10.0']</code>
-     * @param string       $orderBy columns the result should be ordered by. For now (see Issue #3)only ascending is
+     * @param string $orderBy columns the result should be ordered by. For now (see Issue #3)only ascending is
      *                              supported
      * @return array returns an array containing all rows in the result set. Each row is an associative array
      *                              indexed with the column names
@@ -52,7 +61,7 @@ class DataAccess
 
         $sqlOrder = $this->createOrderByStatement($table, $orderBy);
 
-        $sql = 'SELECT ' . $sqlCols . ' FROM ' . self::quoteIdentifiers($table) . $sqlWhere . $sqlOrder;
+        $sql = 'SELECT ' . $sqlCols . ' FROM ' . $this->quoteIdentifiers($table) . $sqlWhere . $sqlOrder;
         $bind = $this->bindValues($fields, $filter, array(), 'w_');
         return $this->run($sql, $bind);
     }
@@ -61,7 +70,7 @@ class DataAccess
      * Run a <code>INSERT INTO</code> on a database table
      *
      * @param string $table table name the insert should run on
-     * @param array  $data  an associative array indexed with column names
+     * @param array $data an associative array indexed with column names
      * @return int return number of inserted rows or false
      * @throws PDOException on insert failed
      */
@@ -96,9 +105,9 @@ class DataAccess
     /**
      * Update one or more rows in the database table
      *
-     * @param string $table         name of the table in the database
-     * @param array  $data          an associative array indexed with column names and the values that should be updated
-     * @param array  $filter        an associative array of filter conditions. The key are the column name, the values
+     * @param string $table name of the table in the database
+     * @param array $data an associative array indexed with column names and the values that should be updated
+     * @param array $filter an associative array of filter conditions. The key are the column name, the values
      *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
      *                              <code>['id'=>'1']</code>
      * @return int number of affected rows or false if update failed
@@ -130,8 +139,8 @@ class DataAccess
     /**
      * Delete rows on a database table
      *
-     * @param string $table         name of the database table
-     * @param array  $filter        an associative array of filter conditions. The key are the column name, the values
+     * @param string $table name of the database table
+     * @param array $filter an associative array of filter conditions. The key are the column name, the values
      *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
      *                              <code>['id'=>'1']</code>
      *
@@ -156,15 +165,19 @@ class DataAccess
      * @param array|string $names one or more identifiers that should be quoted
      * @return array|string quoted identifiers
      */
-    public static function quoteIdentifiers($names)
+    public function quoteIdentifiers($names)
     {
         if (is_array($names)) {
             foreach ($names as $key => $value) {
-                $names[$key] = '`' . preg_replace('#\\\*`#', '``', $value) . '`';
+                $var = $this->quoteIdentifiers($value);
+                $names[$key] = $var;
+
             }
             return $names;
         }
-        return '`' . preg_replace('#\\\*`#', '``', $names) . '`';
+        $result = $this->quote . preg_replace('#\\\*' . $this->quote . '#', $this->quote . $this->quote, $names) . $this->quote;
+        $result = preg_replace('#\.#', $this->quote . '.' . $this->quote, $result);
+        return $result;
     }
 
     /**
@@ -172,7 +185,7 @@ class DataAccess
      * * \* filter the column name from the whitelist of allowed column names
      *
      * @see DataAccess::filter
-     * @param string $table   name of the table in the database
+     * @param string $table name of the table in the database
      * @param string $orderBy the statement e.g.: <code>price ASC</code>
      * @return string extracted <code>ORDER BY</code> statement e.g.: <code>ORDER BY price ASC</code>
      * @throws PDOException
@@ -195,8 +208,8 @@ class DataAccess
      * filter the keys of an associative array as column names for a specific table
      *
      * @see DataAccess::filter
-     * @param string $table  name of a table in the database
-     * @param array  $params associative array indexed with column names
+     * @param string $table name of a table in the database
+     * @param array $params associative array indexed with column names
      * @return array non associative array with the filtered column names as values
      * @throws PDOException
      */
@@ -214,11 +227,11 @@ class DataAccess
      *
      * @see PDO::prepare
      * @see PDO::execute
-     * @param string $sql  This must be a valid SQL statement for the target database server.
-     * @param array  $bind [optional]
+     * @param string $sql This must be a valid SQL statement for the target database server.
+     * @param array $bind [optional]
      *                     An array of values with as many elements as there are bound parameters in the SQL statement
      *                     being executed
-     * @param bool   $shouldThrow if throw PDOException if prepare or execute failed otherwise return false (default true )
+     * @param bool $shouldThrow if throw PDOException if prepare or execute failed otherwise return false (default true )
      * @return array|false|int|\PDOStatement <ul>
      *                     <li> associative array of results if sql statement is select, describe or pragma
      *                     <li> the number of rows affected by a delete, insert, update or replace statement
@@ -250,8 +263,8 @@ class DataAccess
      * <code>DESCRIBE</code> or <code>SELECT column_name FROM information_schema.columns</code> depending on the
      * PDO::ATTR_DRIVER_NAME
      *
-     * @param string $table   name of the table
-     * @param array  $columns array of column names
+     * @param string $table name of the table
+     * @param array $columns array of column names
      * @return array filtered array of column names
      */
     public function filter($table, $columns)
@@ -267,10 +280,10 @@ class DataAccess
     /**
      * insert bind placeholders for a sql statement
      *
-     * @param array  $escapedFields array with column names the index will use for placeholder and can be prefixed with
+     * @param array $escapedFields array with column names the index will use for placeholder and can be prefixed with
      *                              $keyPrefix
-     * @param string $glue          the glue between the bind placeholders
-     * @param string $keyPrefix     prefix for placeholder names
+     * @param string $glue the glue between the bind placeholders
+     * @param string $keyPrefix prefix for placeholder names
      * @return string|false statement with binded column placeholders
      */
     public function implodeBindFields($escapedFields, $glue, $keyPrefix = '')
@@ -294,12 +307,12 @@ class DataAccess
     /**
      * create bind array indexed with placeholder ids prefixed with $keyPrefix
      *
-     * @param array  $fields        array with column names the index will use for placeholder and can be prefixed with
+     * @param array $fields array with column names the index will use for placeholder and can be prefixed with
      *                              $keyPrefix
-     * @param array  $params        associative array indexed with column names
-     * @param array  $bind          [output]
+     * @param array $params associative array indexed with column names
+     * @param array $bind [output]
      *                              associative array the results will be appended to
-     * @param string $keyPrefix     prefix for placeholder names
+     * @param string $keyPrefix prefix for placeholder names
      * @return array bind array
      */
     public function bindValues($fields, $params, $bind = [], $keyPrefix = '')
@@ -318,20 +331,23 @@ class DataAccess
     public function getTableColumns($table)
     {
         $driver = $this->getDriverName();
-        $table = self::quoteIdentifiers($table);
+        $bind = [];
         if ($driver == 'sqlite') {
+            $table = $this->quoteIdentifiers($table);
             $sql = 'PRAGMA table_info(' . $table . ');';
             $key = 'name';
         } elseif ($driver == 'mysql') {
+            $table = $this->quoteIdentifiers($table);
             $sql = 'DESCRIBE ' . $table . ';';
             $key = 'Field';
         } else {
-            $sql = 'SELECT column_name FROM information_schema.columns WHERE table_name = ' . $table . ';';
+            $bind[] = $table;
+            $sql = 'SELECT column_name FROM information_schema.columns WHERE table_name = ? ;';
             $key = 'column_name';
         }
 
         $fields = [];
-        if (is_array($list = $this->run($sql, [], false))) {
+        if (is_array($list = $this->run($sql, $bind, false))) {
             foreach ($list as $record) {
                 $fields[] = $record[$key];
             }
@@ -359,7 +375,6 @@ class DataAccess
      */
     public function getDriverName()
     {
-        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
-        return $driver;
+        return $this->driver;
     }
 }

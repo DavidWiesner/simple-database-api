@@ -32,13 +32,22 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     public function testEscapeIdentifiers()
     {
 
-        $firstEsc = DataAccess::quoteIdentifiers('1`st');
-        $secEsc = DataAccess::quoteIdentifiers('2``st');
+        $firstEsc = $this->dataAccess->quoteIdentifiers('1`st');
+        $secEsc = $this->dataAccess->quoteIdentifiers('2``st');
 
         $this->assertEquals('`1``st`', $firstEsc);
         $this->assertEquals('`2````st`', $secEsc);
     }
 
+    public function testEscapeSchemaTable()
+    {
+
+        $firstEsc = $this->dataAccess->quoteIdentifiers('1`st.2`cd');
+        $secEsc = $this->dataAccess->quoteIdentifiers('2``st.3``st');
+
+        $this->assertEquals('`1``st`.`2``cd`', $firstEsc);
+        $this->assertEquals('`2````st`.`3````st`', $secEsc);
+    }
 
     /**
      * @expectedException PDOException
@@ -357,7 +366,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $stmt = $this->getMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('unknownDB');
         $db->expects($this->once())->method('prepare')
-                ->with('SELECT column_name FROM information_schema.columns WHERE table_name = `books`;')
+                ->with('SELECT column_name FROM information_schema.columns WHERE table_name = ? ;')
                 ->willReturn($stmt);
         /** @var PDO $db */
         $da = new DataAccess($db);
