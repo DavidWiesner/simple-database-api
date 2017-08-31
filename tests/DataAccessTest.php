@@ -374,6 +374,34 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('"ab""c"."cd""""fg"', $result);
     }
 
+    public function testQueryPostgresTableColumns()
+    {
+        $db = $this->getMockBuilder(PDOMock::class)->getMock();
+        $stmt = $this->getMock(PDOStatement::class);
+        $db->expects($this->once())->method('getAttribute')->willReturn('pgsql');
+        $db->expects($this->once())->method('prepare')
+            ->with('SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ? ;')
+            ->willReturn($stmt);
+        /** @var PDO $db */
+        $da = new DataAccess($db);
+
+        $da->filterForTable('books.test', array('title'));
+    }
+
+    public function testQueryPostgresTableColumnsNoSchema()
+    {
+        $db = $this->getMockBuilder(PDOMock::class)->getMock();
+        $stmt = $this->getMock(PDOStatement::class);
+        $db->expects($this->once())->method('getAttribute')->willReturn('pgsql');
+        $db->expects($this->once())->method('prepare')
+            ->with('SELECT column_name FROM information_schema.columns WHERE table_name = ? ;')
+            ->willReturn($stmt);
+        /** @var PDO $db */
+        $da = new DataAccess($db);
+
+        $da->filterForTable('books', array('title'));
+    }
+
     /**
      * https://blogs.kent.ac.uk/webdev/2011/07/14/phpunit-and-unserialized-pdo-instances/
      * @backupGlobals          disabled

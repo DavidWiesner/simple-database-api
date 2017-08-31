@@ -367,7 +367,14 @@ class DataAccess
             $key = 'Field';
         } else {
             $bind[] = $table;
-            $sql = 'SELECT column_name FROM information_schema.columns WHERE table_name = ? ;';
+            $sql = 'SELECT column_name FROM information_schema.columns WHERE ';
+            if($driver == 'pgsql'){
+                $bind = explode('.', $table, 2);
+                if(count($bind) == 2){
+                    $sql.='table_schema = ? AND ';
+                }
+            }
+            $sql.='table_name = ? ;';
             $key = 'column_name';
         }
 
