@@ -1,5 +1,7 @@
 <?php
+
 namespace DBohoTest\IO;
+
 use DBoho\IO\DataAccess;
 use PDO;
 use PDOStatement;
@@ -64,8 +66,8 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $data = $this->dataAccess->select('books');
 
         $this->assertSame([
-                ['id' => '1', 'title' => 'last', 'price' => '2.0'],
-                ['id' => '2', 'title' => 'first', 'price' => '1.5']
+            ['id' => '1', 'title' => 'last', 'price' => '2.0'],
+            ['id' => '2', 'title' => 'first', 'price' => '1.5']
         ], $data);
     }
 
@@ -315,7 +317,6 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     }
 
 
-
     public function testRunReturnStatement()
     {
         $stmt = $this->dataAccess->run('ALTER TABLE books RENAME TO dvds');
@@ -352,7 +353,25 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         /** @var PDO $db */
         $da = new DataAccess($db);
 
-        $da->filter('books', array('title'));
+        $da->filterForTable('books', array('title'));
+    }
+
+    /**
+     * https://blogs.kent.ac.uk/webdev/2011/07/14/phpunit-and-unserialized-pdo-instances/
+     * @backupGlobals          disabled
+     * @backupStaticAttributes disabled
+     */
+    public function testQuotePostgres()
+    {
+        $db = $this->getMockBuilder(PDOMock::class)->getMock();
+        $stmt = $this->getMock(PDOStatement::class);
+        $db->expects($this->once())->method('getAttribute')->willReturn('pgsql');
+        /** @var PDO $db */
+        $da = new DataAccess($db);
+
+        $result = $da->quoteIdentifiers('ab"c.cd""fg');
+
+        $this->assertEquals('"ab""c"."cd""""fg"', $result);
     }
 
     /**
@@ -366,17 +385,17 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $stmt = $this->getMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('unknownDB');
         $db->expects($this->once())->method('prepare')
-                ->with('SELECT column_name FROM information_schema.columns WHERE table_name = ? ;')
-                ->willReturn($stmt);
+            ->with('SELECT column_name FROM information_schema.columns WHERE table_name = ? ;')
+            ->willReturn($stmt);
         /** @var PDO $db */
         $da = new DataAccess($db);
 
-        $da->filter('books', array('title'));
+        $da->filterForTable('books', array('title'));
     }
 
     public function testFilterNoArray()
     {
-        $result = $this->dataAccess->filter('books', 'noArray');
+        $result = $this->dataAccess->filterForTable('books', 'noArray');
 
         $this->assertSame([], $result);
     }
@@ -397,7 +416,7 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->db->exec('ALTER TABLE books MODIFY id int(11) NOT NULL AUTO_INCREMENT;');
         $this->db->exec('INSERT INTO `books` (`id`, `title`, `price`) VALUES (1, "last", 2), (2, "first", 1.50);');
         $this->db->exec('INSERT INTO `users` (`id`,`email`, `password`) ' .
-                'VALUES (1, "user1", "pass1"), (2, "user2", "pass2");');
+            'VALUES (1, "user1", "pass1"), (2, "user2", "pass2");');
         $this->db->exec('CREATE TABLE `test``escp` (`1``st` INT, `2````st` INT NOT NULL);
 							INSERT INTO `test``escp` (`1``st`, `2````st`) VALUES (1,2), (2, 1)');
 

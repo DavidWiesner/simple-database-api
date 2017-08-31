@@ -50,10 +50,11 @@ class DataAccess
     public function select($table, $cols = [], $filter = [], $orderBy = '')
     {
         $cols = is_string($cols) ? [$cols] : $cols;
-        $cols = $this->filter($table, $cols);
+        $fields_allowed = $this->getTableColumns($table);
+        $cols = $this->filter($fields_allowed, $cols);
         $sqlCols = empty($cols) ? '*' : implode(',', $this->quoteIdentifiers($cols));
 
-        $fields = $this->filterKeys($table, $filter);
+        $fields = $this->filterKeys($fields_allowed, $filter);
         $escapedFields = $this->quoteIdentifiers($fields);
 
         $statement = $this->implodeBindFields($escapedFields, ' AND ', 'w_');
@@ -82,7 +83,8 @@ class DataAccess
         }
         $requestFields = $data[0];
 
-        $fields = $this->filterKeys($table, $requestFields);
+        $fields_allowed = $this->getTableColumns($table);
+        $fields = $this->filterKeys($fields_allowed, $requestFields);
         if (count($fields) === 0) {
             throw new PDOException('empty request');
         }
@@ -98,7 +100,7 @@ class DataAccess
         }
 
         $sqlCols = ' (' . implode($escapedFields, ', ') . ')';
-        $sql = 'INSERT INTO ' . self::quoteIdentifiers($table) . $sqlCols . ' VALUES ' . $insertPlaceholder . ';';
+        $sql = 'INSERT INTO ' . $this->quoteIdentifiers($table) . $sqlCols . ' VALUES ' . $insertPlaceholder . ';';
         return $this->run($sql, $insertValues);
     }
 
@@ -116,7 +118,8 @@ class DataAccess
     public function update($table, $data, $filter = [])
     {
 
-        $fields = $this->filterKeys($table, $data);
+        $fields_allowed = $this->getTableColumns($table);
+        $fields = $this->filterKeys($fields_allowed, $data);
         if (count($fields) === 0) {
             throw new PDOException('empty request');
         }
@@ -124,7 +127,7 @@ class DataAccess
         $statement = $this->implodeBindFields($escapedFields, ',', 'u_');
         $sets = ' SET ' . $statement;
 
-        $whereFields = $this->filterKeys($table, $filter);
+        $whereFields = $this->filterKeys($fields_allowed, $filter);
         $escapedWhereFields = $this->quoteIdentifiers($whereFields);
         $statement = $this->implodeBindFields($escapedWhereFields, ' AND ', 'w_');
         $whereStatement = $statement !== false ? ' WHERE ' . $statement : '';
@@ -149,7 +152,7 @@ class DataAccess
      */
     public function delete($table, $filter = [])
     {
-        $whereFields = $this->filterKeys($table, $filter);
+        $whereFields = $this->filterKeysForTable($table, $filter);
         $escapedWhereFields = $this->quoteIdentifiers($whereFields);
         $statement = $this->implodeBindFields($escapedWhereFields, ' AND ');
         $whereStatement = $statement !== false ? ' WHERE ' . $statement : '';
@@ -200,7 +203,7 @@ class DataAccess
             $orderBy = $m[1];
             $direction = strtoupper($m[2]);
         }
-        $this->filterKeys($table, [$orderBy]);
+        $this->filterKeysForTable($table, [$orderBy]);
         return ' ORDER BY ' . self::quoteIdentifiers($orderBy) . ' ' . $direction . ' ';
     }
 
@@ -208,18 +211,32 @@ class DataAccess
      * filter the keys of an associative array as column names for a specific table
      *
      * @see DataAccess::filter
-     * @param string $table name of a table in the database
+     * @param array $fields_allowed array of fields allowed
      * @param array $params associative array indexed with column names
      * @return array non associative array with the filtered column names as values
      * @throws PDOException
      */
-    public function filterKeys($table, $params)
+    public function filterKeys($fields_allowed, $params)
     {
         if (!is_array($params)) {
             return [];
         }
         $params = array_keys($params);
-        return $this->filter($table, $params);
+        return $this->filter($fields_allowed, $params);
+    }
+
+    /**
+     * filter the keys of an associative array as column names for a specific table
+     *
+     * @see DataAccess::filter
+     * @param string $table database table to query for allowed fields
+     * @param array $params associative array indexed with column names
+     * @return array non associative array with the filtered column names as values
+     * @throws PDOException
+     */
+    public function filterKeysForTable($table, $params)
+    {
+        return $this->filterKeys($this->getTableColumns($table), $params);
     }
 
     /**
@@ -263,18 +280,29 @@ class DataAccess
      * <code>DESCRIBE</code> or <code>SELECT column_name FROM information_schema.columns</code> depending on the
      * PDO::ATTR_DRIVER_NAME
      *
-     * @param string $table name of the table
+     * @param string $table database table to query for allowed fields
      * @param array $columns array of column names
      * @return array filtered array of column names
      */
-    public function filter($table, $columns)
+    public function filterForTable($table, $columns)
+    {
+        return $this->filter($this->getTableColumns($table), $columns);
+    }
+
+    /**
+     * filter an array of column names based on a whitelist provided
+     *
+     * @param array $fields_allowed array of fields allowed
+     * @param array $columns array of column names
+     * @return array filtered array of column names
+     */
+    public function filter($fields_allowed, $columns)
     {
         if (!is_array($columns)) {
             return [];
         }
 
-        $fields = $this->getTableColumns($table);
-        return array_values(array_intersect($columns, $fields));
+        return array_values(array_intersect($columns, $fields_allowed));
     }
 
     /**
