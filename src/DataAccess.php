@@ -89,17 +89,14 @@ class DataAccess
             throw new PDOException('empty request');
         }
 
-        $escapedFields = $this->quoteIdentifiers($fields);
-        $fieldCount = count($escapedFields);
-        $insertPlaceholder = '(' . implode(',', array_fill(0, $fieldCount, '?')) . ')';
-        $insertPlaceholder = implode(',', array_fill(0, count($data), $insertPlaceholder));
-        $insertValues = array();
-        foreach ($data as $key => $values) {
-            $filteredValues = array_intersect_key($values, array_flip($fields));
-            $insertValues = array_merge($insertValues, array_values($filteredValues));
-        }
+        $fieldCount = count($fields);
+        $rowCount = count($data);
+        $insertPlaceholder = $this->generateInsertPlaceholder($fieldCount, $rowCount);
+        $insertValues = $this->filterInsertValues($data, $fields);
 
+        $escapedFields = $this->quoteIdentifiers($fields);
         $sqlCols = ' (' . implode($escapedFields, ', ') . ')';
+
         $sql = 'INSERT INTO ' . $this->quoteIdentifiers($table) . $sqlCols . ' VALUES ' . $insertPlaceholder . ';';
         return $this->run($sql, $insertValues);
     }
@@ -404,5 +401,33 @@ class DataAccess
     public function getDriverName()
     {
         return $this->driver;
+    }
+
+    /**
+     * generate insert placeholder for parameter binding based on field and row count
+     * @param $fieldCount integer
+     * @param $rowCount integer
+     * @return string the placeholder
+     */
+    public function generateInsertPlaceholder($fieldCount, $rowCount)
+    {
+        $insertPlaceholder = '(' . implode(',', array_fill(0, $fieldCount, '?')) . ')';
+        $insertPlaceholder = implode(',', array_fill(0, $rowCount, $insertPlaceholder));
+        return $insertPlaceholder;
+    }
+
+    /**
+     * @param $data
+     * @param $fields
+     * @return array
+     */
+    public function filterInsertValues($data, $fields)
+    {
+        $insertValues = array();
+        foreach ($data as $key => $values) {
+            $filteredValues = array_intersect_key($values, array_flip($fields));
+            $insertValues = array_merge($insertValues, array_values($filteredValues));
+        }
+        return $insertValues;
     }
 }
