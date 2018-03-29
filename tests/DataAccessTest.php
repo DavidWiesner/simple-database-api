@@ -192,6 +192,24 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame([$data], $result);
     }
 
+	public function testInsertFilterFillEmpty()
+	{
+		$first = '1`st';
+		$sec = '2``st';
+		$data = [$first => '3', $sec => '4'];
+		$oddData = array_merge($data, ['unknownColumn' => 'none']);
+
+		$rowCount = $this->dataAccess->insert('test`escp', [$oddData, [$sec => '3']]);
+
+		$this->assertEquals(2, $rowCount);
+		$this->assertEquals(4, $this->dataAccess->getLastInsertId());
+		$result = $this->dataAccess->select('test`escp', [], [$first => '3']);
+		$this->assertSame([$data], $result);
+
+		$result = $this->dataAccess->select('test`escp', [], [$sec => '3']);
+		$this->assertSame([[$first=> null, $sec => '3']], $result);
+	}
+
     /**
      * @expectedException PDOException
      */

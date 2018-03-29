@@ -423,20 +423,23 @@ class DataAccess
         return $insertPlaceholder;
     }
 
-    /**
-     * filter data rows for fields (array keys) allowed
-     * @param $data array rows of assoc arrays
-     * @param $fields array keys allowed for assoc array
-     * @return array filtered values
-     */
-    public function filterInsertValues($data, $fields)
-    {
-        $insertValues = array();
-        $field_keys = array_flip($fields);
-        foreach ($data as $key => $values) {
-            $filteredValues = array_intersect_key($values, $field_keys);
-            $insertValues = array_merge($insertValues, array_values($filteredValues));
-        }
-        return $insertValues;
-    }
+	/**
+	 * filter data rows for fields (array keys) allowed
+	 *
+	 * @param $data array rows of assoc arrays
+	 * @param $fields array keys allowed for assoc array
+	 * @return array filtered values
+	 */
+	public function filterInsertValues($data, $fields)
+	{
+		$insertValues = array();
+		$field_keys = array_flip($fields);
+		foreach ($data as $key => $values) {
+			$filteredValues = array_intersect_key($values, $field_keys);
+			$emptyFields = array_fill_keys($fields, null);
+			$filledValues = array_values(array_merge($emptyFields, $filteredValues));
+			$insertValues = array_merge($insertValues, $filledValues);
+		}
+		return $insertValues;
+	}
 }
