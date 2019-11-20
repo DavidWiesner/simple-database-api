@@ -442,4 +442,34 @@ class DataAccess
 		}
 		return $insertValues;
 	}
+
+    /**
+     * Initiates a transaction
+     * @see \PDO::beginTransaction()
+     * @return bool <code>TRUE</code> on success or <code>FALSE</code> on failure.
+     */
+    public function beginTransaction()
+    {
+        return $this->pdo->beginTransaction();
+    }
+
+    /**
+     * Initiates a transaction
+     * @see \PDO::rollBack()
+     * @return bool <code>TRUE</code> on success or <code>FALSE</code> on failure.
+     */
+    public function rollback()
+    {
+        return $this->pdo->rollBack();
+    }
+
+    /**
+     * Commits a transaction
+     * @see \PDO::commit()
+     * @return bool <code>TRUE</code> on success or <code>FALSE</code> on failure.
+     */
+    public function commit()
+    {
+        return $this->pdo->commit();
+    }
 }
