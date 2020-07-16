@@ -4,6 +4,7 @@ namespace DBoho\IO;
 
 use PDO;
 use PDOException;
+use PDOStatement;
 
 /**
  * Class DataAccess.
@@ -12,13 +13,13 @@ class DataAccess
 {
     private $driver;
     /**
-     * @var \PDO
+     * @var PDO
      */
     protected $pdo;
-    private $quote = '`';
+    private $quote;
 
     /**
-     * @param \PDO $pdo
+     * @param PDO $pdo
      */
     public function __construct(PDO $pdo)
     {
@@ -246,7 +247,7 @@ class DataAccess
      *                     An array of values with as many elements as there are bound parameters in the SQL statement
      *                     being executed
      * @param bool $shouldThrow if throw PDOException if prepare or execute failed otherwise return false (default true )
-     * @return array|false|int|\PDOStatement <ul>
+     * @return array|false|int|PDOStatement <ul>
      *                     <li> associative array of results if sql statement is select, describe or pragma
      *                     <li> the number of rows affected by a delete, insert, update or replace statement
      *                     <li> the executed PDOStatement otherwise</ul>

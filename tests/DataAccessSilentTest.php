@@ -8,12 +8,10 @@ use PDOException;
 class DataAccessSilentTest extends DataAccessTest
 {
 
-    /**
-     * @expectedException PDOException
-     */
-    public function testUnknownTable()
+	public function testUnknownTable()
     {
-        return $this->dataAccess->select('unknown');
+	    $this->expectException(PDOException::class);
+	    return $this->dataAccess->select('unknown');
     }
 
     protected function setUp()

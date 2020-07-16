@@ -5,12 +5,13 @@ namespace DBohoTest\IO;
 use DBoho\IO\DataAccess;
 use PDO;
 use PDOStatement;
-use PHPUnit_Framework_TestCase;
+use PHPUnit;
 use PDOException;
 
-class PDOMock extends \PDO
+class PDOMock extends PDO
 {
-    public function __construct()
+	/** @noinspection PhpMissingParentConstructorInspection */
+	public function __construct()
     {
     }
 }
@@ -20,7 +21,7 @@ class PDOMock extends \PDO
  * Date: 11.03.16
  * Time: 07:52
  */
-class DataAccessTest extends PHPUnit_Framework_TestCase
+class DataAccessTest extends PHPUnit\Framework\TestCase
 {
     /**
      * @var PDO
@@ -51,13 +52,11 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertEquals('`2````st`.`3````st`', $secEsc);
     }
 
-    /**
-     * @expectedException PDOException
-     * @expectedExceptionMessageRegExp 'no such table.* unknown'
-     */
-    public function testUnknownTable()
+	public function testUnknownTable()
     {
-        return $this->dataAccess->select('unknown');
+	    $this->expectException(PDOException::class);
+	    $this->expectExceptionMessageRegExp("'no such table.* unknown'");
+	    return $this->dataAccess->select('unknown');
     }
 
     public function testSelectWithoutParameter()
@@ -210,12 +209,10 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 		$this->assertSame([[$first=> null, $sec => '3']], $result);
 	}
 
-    /**
-     * @expectedException PDOException
-     */
-    public function testInsertOnlyUnknownColumn()
+	public function testInsertOnlyUnknownColumn()
     {
-        $oddData = ['unknownColumn' => 'none'];
+	    $this->expectException(PDOException::class);
+	    $oddData = ['unknownColumn' => 'none'];
 
         $this->dataAccess->insert('test`escp', $oddData);
     }
@@ -237,12 +234,10 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     }
 
 
-    /**
-     * @expectedException \PDOException
-     */
-    public function testInsertNoData()
+	public function testInsertNoData()
     {
-        $this->dataAccess->insert('table', null);
+	    $this->expectException(PDOException::class);
+	    $this->dataAccess->insert('table', null);
     }
 
     public function testUpdateOne()
@@ -271,12 +266,10 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertSame([[$first => '0', $sec => '0'], [$first => '0', $sec => '0']], $result);
     }
 
-    /**
-     * @expectedException \PDOException
-     */
-    public function testUpdateNoData()
+	public function testUpdateNoData()
     {
-        $this->dataAccess->update('table', null);
+	    $this->expectException(PDOException::class);
+	    $this->dataAccess->update('table', null);
     }
 
     public function testDeleteNone()
@@ -341,12 +334,10 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
         $this->assertInstanceOf(PDOStatement::class, $stmt);
     }
 
-    /**
-     * @expectedException PDOException
-     */
-    public function testRunBindFailed()
+	public function testRunBindFailed()
     {
-        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+	    $this->expectException(PDOException::class);
+	    $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
         $this->dataAccess->run('ALTER TABLE books RENAME TO boooks', [':unkown' => '1']);
     }
 
@@ -365,8 +356,9 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     public function testFilterMySQL()
     {
         $db = $this->getMockBuilder(PDOMock::class)->getMock();
-        $stmt = $this->getMock(PDOStatement::class);
+        $stmt = $this->createMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('mysql');
+	    /** @noinspection PhpParamsInspection */
         $db->expects($this->once())->method('prepare')->with('DESCRIBE `books`;')->willReturn($stmt);
         /** @var PDO $db */
         $da = new DataAccess($db);
@@ -382,7 +374,6 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     public function testQuotePostgres()
     {
         $db = $this->getMockBuilder(PDOMock::class)->getMock();
-        $stmt = $this->getMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('pgsql');
         /** @var PDO $db */
         $da = new DataAccess($db);
@@ -395,9 +386,10 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     public function testQueryPostgresTableColumns()
     {
         $db = $this->getMockBuilder(PDOMock::class)->getMock();
-        $stmt = $this->getMock(PDOStatement::class);
+        $stmt = $this->createMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('pgsql');
-        $db->expects($this->once())->method('prepare')
+	    /** @noinspection PhpParamsInspection */
+	    $db->expects($this->once())->method('prepare')
             ->with('SELECT column_name FROM information_schema.columns WHERE table_schema = ? AND table_name = ? ;')
             ->willReturn($stmt);
         /** @var PDO $db */
@@ -409,8 +401,9 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     public function testQueryPostgresTableColumnsNoSchema()
     {
         $db = $this->getMockBuilder(PDOMock::class)->getMock();
-        $stmt = $this->getMock(PDOStatement::class);
+        $stmt = $this->createMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('pgsql');
+	    /** @noinspection PhpParamsInspection */
         $db->expects($this->once())->method('prepare')
             ->with('SELECT column_name FROM information_schema.columns WHERE table_name = ? ;')
             ->willReturn($stmt);
@@ -428,9 +421,10 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
     public function testFilterUnknownDB()
     {
         $db = $this->getMockBuilder(PDOMock::class)->getMock();
-        $stmt = $this->getMock(PDOStatement::class);
+        $stmt = $this->createMock(PDOStatement::class);
         $db->expects($this->once())->method('getAttribute')->willReturn('unknownDB');
-        $db->expects($this->once())->method('prepare')
+	    /** @noinspection PhpParamsInspection */
+	    $db->expects($this->once())->method('prepare')
             ->with('SELECT column_name FROM information_schema.columns WHERE table_name = ? ;')
             ->willReturn($stmt);
         /** @var PDO $db */
@@ -441,7 +435,8 @@ class DataAccessTest extends PHPUnit_Framework_TestCase
 
     public function testFilterNoArray()
     {
-        $result = $this->dataAccess->filterForTable('books', 'noArray');
+	    /** @noinspection PhpParamsInspection */
+	    $result = $this->dataAccess->filterForTable('books', 'noArray');
 
         $this->assertSame([], $result);
     }
