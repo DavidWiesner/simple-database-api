@@ -7,9 +7,9 @@ env:
   - INSTALL_ARGS=""
 
 before_install:
-  - composer require "phpunit/phpunit:${PHPUNIT_VERSION}" --prefer-lowest --no-update
+  - composer require "phpunit/phpunit:${PHPUNIT_VERSION}" --no-update
 
-install: composer install --prefer-dist --no-interaction $INSTALL_ARGS
+install: composer update --prefer-dist --no-interaction --prefer-lowest $INSTALL_ARGS
 
 script: ./vendor/bin/phpunit --debug -c phpunit.xml --coverage-clover clover.xml
 
