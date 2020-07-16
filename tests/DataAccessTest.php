@@ -234,11 +234,34 @@ class DataAccessTest extends PHPUnit\Framework\TestCase
     }
 
 
-    public function testInsertNoData()
+    public function testInsertNoDataRaiseException()
     {
         $this->expectException(PDOException::class);
+        $this->expectExceptionMessage('empty request');
         $this->dataAccess->insert('table', null);
     }
+
+    public function testInsertNoValidDataRaiseException()
+    {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage('empty request');
+        $this->dataAccess->insert('table', ['not_existing' => 1]);
+    }
+
+    public function testInsertNoDataSilent()
+    {
+        $numAffected = $this->dataAccess->insert('table', null, true);
+
+        $this->assertEquals(0, $numAffected);
+    }
+
+    public function testInsertValidNoDataSilent()
+    {
+        $numAffected = $this->dataAccess->insert('table', null, true);
+
+        $this->assertEquals(0, $numAffected);
+    }
+
 
     public function testUpdateOne()
     {
@@ -266,10 +289,32 @@ class DataAccessTest extends PHPUnit\Framework\TestCase
         $this->assertSame([[$first => '0', $sec => '0'], [$first => '0', $sec => '0']], $result);
     }
 
-    public function testUpdateNoData()
+    public function testUpdateNoDataRaiseException()
     {
         $this->expectException(PDOException::class);
+        $this->expectExceptionMessage('empty request');
         $this->dataAccess->update('table', null);
+    }
+
+    public function testUpdateNoValidDataRaiseException()
+    {
+        $this->expectException(PDOException::class);
+        $this->expectExceptionMessage('empty request');
+        $this->dataAccess->update('table', ['not_existing' => 1]);
+    }
+
+    public function testUpdateNoDataSilent()
+    {
+        $numAffected = $this->dataAccess->update('table', null, [], true);
+
+        $this->assertEquals(0, $numAffected);
+    }
+
+    public function testUpdateValidNoDataSilent()
+    {
+        $numAffected = $this->dataAccess->update('table', null, [], true);
+
+        $this->assertEquals(0, $numAffected);
     }
 
     public function testDeleteNone()

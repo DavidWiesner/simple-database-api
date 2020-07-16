@@ -73,10 +73,12 @@ class DataAccess
      *
      * @param string $table table name the insert should run on
      * @param array $data an associative array indexed with column names
+     * @param bool $notThrowOnEmptyData if true this method wil not throw an exception, when no data or no valid data
+     *                                 was provided but return a <code>0</code>.
      * @return int return number of inserted rows or false
      * @throws PDOException on insert failed
      */
-    public function insert($table, $data)
+    public function insert($table, $data, $notThrowOnEmptyData = false)
     {
         $isMultiple = $data !== null && is_array($data) && is_array($data[array_keys($data)[0]]);
         if (!$isMultiple) {
@@ -87,7 +89,11 @@ class DataAccess
         $fields_allowed = $this->getTableColumns($table);
         $fields = $this->filterKeys($fields_allowed, $requestFields);
         if (count($fields) === 0) {
-            throw new PDOException('empty request');
+            if($notThrowOnEmptyData === false){
+                throw new PDOException('empty request');
+            } else {
+                return 0;
+            }
         }
 
         $fieldCount = count($fields);
@@ -110,16 +116,22 @@ class DataAccess
      * @param array $filter an associative array of filter conditions. The key are the column name, the values
      *                              compared values. all key value pairs will be chained with a logical `AND`. E.g.:
      *                              <code>['id'=>'1']</code>
+     * @param bool $notThrowOnEmptyData if true this method wil not throw an exception, when no data or no valid data
+     *                                 was provided but return a <code>0</code>.
      * @return int number of affected rows or false if update failed
      * @throws PDOException on update failed
      */
-    public function update($table, $data, $filter = [])
+    public function update($table, $data, $filter = [], $notThrowOnEmptyData = false)
     {
 
         $fields_allowed = $this->getTableColumns($table);
         $fields = $this->filterKeys($fields_allowed, $data);
         if (count($fields) === 0) {
-            throw new PDOException('empty request');
+            if($notThrowOnEmptyData === false){
+                throw new PDOException('empty request');
+            } else {
+                return 0;
+            }
         }
         $escapedFields = $this->quoteIdentifiers($fields);
         $statement = $this->implodeBindFields($escapedFields, ',', 'u_');
