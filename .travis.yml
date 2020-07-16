@@ -7,7 +7,7 @@ env:
   - INSTALL_ARGS=""
 
 before_install:
-  - composer require "phpunit/phpunit:${PHPUNIT_VERSION}" --no-update
+  - composer require "phpunit/phpunit:${PHPUNIT_VERSION}" --prefer-lowest --no-update
 
 install: composer install --prefer-dist --no-interaction $INSTALL_ARGS
 
