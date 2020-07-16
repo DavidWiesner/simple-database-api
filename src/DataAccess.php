@@ -176,7 +176,8 @@ class DataAccess
             }
             return $names;
         }
-        $result = $this->quote . preg_replace('#\\\*' . $this->quote . '#', $this->quote . $this->quote, $names) . $this->quote;
+        $result = $this->quote . preg_replace('#\\\*' . $this->quote . '#', $this->quote . $this->quote,
+                $names) . $this->quote;
         $result = preg_replace('#\.#', $this->quote . '.' . $this->quote, $result);
         return $result;
     }
@@ -185,11 +186,11 @@ class DataAccess
      * create a filtered* sql <code>ORDER BY</code> statement out of an string
      * * \* filter the column name from the whitelist of allowed column names
      *
-     * @see DataAccess::filter
      * @param string $table name of the table in the database
      * @param string $orderBy the statement e.g.: <code>price ASC</code>
      * @return string extracted <code>ORDER BY</code> statement e.g.: <code>ORDER BY price ASC</code>
      * @throws PDOException
+     * @see DataAccess::filter
      */
     public function createOrderByStatement($table, $orderBy)
     {
@@ -208,11 +209,11 @@ class DataAccess
     /**
      * filter the keys of an associative array as column names for a specific table
      *
-     * @see DataAccess::filter
      * @param array $fields_allowed array of fields allowed
      * @param array $params associative array indexed with column names
      * @return array non associative array with the filtered column names as values
      * @throws PDOException
+     * @see DataAccess::filter
      */
     public function filterKeys($fields_allowed, $params)
     {
@@ -226,11 +227,11 @@ class DataAccess
     /**
      * filter the keys of an associative array as column names for a specific table
      *
-     * @see DataAccess::filter
      * @param string $table database table to query for allowed fields
      * @param array $params associative array indexed with column names
      * @return array non associative array with the filtered column names as values
      * @throws PDOException
+     * @see DataAccess::filter
      */
     public function filterKeysForTable($table, $params)
     {
@@ -240,8 +241,6 @@ class DataAccess
     /**
      * prepare and execute sql statement on the pdo. Run PDO::fetchAll on select, describe or pragma statements
      *
-     * @see PDO::prepare
-     * @see PDO::execute
      * @param string $sql This must be a valid SQL statement for the target database server.
      * @param array $bind [optional]
      *                     An array of values with as many elements as there are bound parameters in the SQL statement
@@ -253,6 +252,8 @@ class DataAccess
      *                     <li> the executed PDOStatement otherwise</ul>
      *                     <li> false only if execution failed and the PDO::ERRMODE_EXCEPTION was unset</ul>
      * @throws PDOException if prepare or execute will fail and $shouldThrow is True
+     * @see PDO::execute
+     * @see PDO::prepare
      */
     public function run($sql, $bind = array(), $shouldThrow = true)
     {
@@ -369,13 +370,13 @@ class DataAccess
         } else {
             $bind[] = $table;
             $sql = 'SELECT column_name FROM information_schema.columns WHERE ';
-            if($driver == 'pgsql'){
+            if ($driver == 'pgsql') {
                 $bind = explode('.', $table, 2);
-                if(count($bind) == 2){
-                    $sql.='table_schema = ? AND ';
+                if (count($bind) == 2) {
+                    $sql .= 'table_schema = ? AND ';
                 }
             }
-            $sql.='table_name = ? ;';
+            $sql .= 'table_name = ? ;';
             $key = 'column_name';
         }
 
@@ -392,10 +393,10 @@ class DataAccess
     /**
      * Returns the ID of the last inserted row or sequence value
      *
-     * @see \PDO::lastInsertId()
      * @param string $name [optional]
      *                     Name of the sequence object from which the ID should be returned.
      * @return string last insert id
+     * @see \PDO::lastInsertId()
      */
     public function getLastInsertId($name = null)
     {
@@ -424,23 +425,23 @@ class DataAccess
         return $insertPlaceholder;
     }
 
-	/**
-	 * filter data rows for fields (array keys) allowed
-	 *
-	 * @param $data array rows of assoc arrays
-	 * @param $fields array keys allowed for assoc array
-	 * @return array filtered values
-	 */
-	public function filterInsertValues($data, $fields)
-	{
-		$insertValues = array();
-		$field_keys = array_flip($fields);
-		foreach ($data as $key => $values) {
-			$filteredValues = array_intersect_key($values, $field_keys);
-			$emptyFields = array_fill_keys($fields, null);
-			$filledValues = array_values(array_merge($emptyFields, $filteredValues));
-			$insertValues = array_merge($insertValues, $filledValues);
-		}
-		return $insertValues;
-	}
+    /**
+     * filter data rows for fields (array keys) allowed
+     *
+     * @param $data array rows of assoc arrays
+     * @param $fields array keys allowed for assoc array
+     * @return array filtered values
+     */
+    public function filterInsertValues($data, $fields)
+    {
+        $insertValues = array();
+        $field_keys = array_flip($fields);
+        foreach ($data as $key => $values) {
+            $filteredValues = array_intersect_key($values, $field_keys);
+            $emptyFields = array_fill_keys($fields, null);
+            $filledValues = array_values(array_merge($emptyFields, $filteredValues));
+            $insertValues = array_merge($insertValues, $filledValues);
+        }
+        return $insertValues;
+    }
 }

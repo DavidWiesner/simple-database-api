@@ -1,4 +1,5 @@
 <?php
+
 namespace DBohoTest\IO;
 
 use PDO;
@@ -8,10 +9,10 @@ use PDOException;
 class DataAccessSilentTest extends DataAccessTest
 {
 
-	public function testUnknownTable()
+    public function testUnknownTable()
     {
-	    $this->expectException(PDOException::class);
-	    return $this->dataAccess->select('unknown');
+        $this->expectException(PDOException::class);
+        return $this->dataAccess->select('unknown');
     }
 
     protected function setUp()
