@@ -102,7 +102,7 @@ class DataAccess
         $insertValues = $this->filterInsertValues($data, $fields);
 
         $escapedFields = $this->quoteIdentifiers($fields);
-        $sqlCols = ' (' . implode($escapedFields, ', ') . ')';
+        $sqlCols = ' (' . implode(', ', $escapedFields) . ')';
 
         $sql = 'INSERT INTO ' . $this->quoteIdentifiers($table) . $sqlCols . ' VALUES ' . $insertPlaceholder . ';';
         return $this->run($sql, $insertValues);
