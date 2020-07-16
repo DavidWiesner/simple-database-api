@@ -7,7 +7,7 @@ cache:
 before_install:
   - composer require "phpunit/phpunit:${PHPUNIT_VERSION}" --no-update
 
-install: composer update --prefer-source --no-interaction --ignore-platform-reqs
+install: composer install --prefer-dist --no-interaction --ignore-platform-reqs
 
 script: ./vendor/bin/phpunit --debug -c phpunit.xml --coverage-clover clover.xml
 
