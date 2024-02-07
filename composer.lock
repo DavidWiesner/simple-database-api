@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3ac6d00d00bac7846e2035013c170d02",
+    "content-hash": "3f879eff398adfcc351aa9226d46a53b",
     "packages": [],
     "packages-dev": [
         {
@@ -1698,32 +1698,40 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v2.1.0",
-            "target-dir": "Symfony/Component/Yaml",
+            "version": "v3.3.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "f18e004fc975707bb4695df1dbbe9b0d8c8b7715"
+                "reference": "ddc23324e6cfe066f3dd34a37ff494fa80b617ed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/f18e004fc975707bb4695df1dbbe9b0d8c8b7715",
-                "reference": "f18e004fc975707bb4695df1dbbe9b0d8c8b7715",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/ddc23324e6cfe066f3dd34a37ff494fa80b617ed",
+                "reference": "ddc23324e6cfe066f3dd34a37ff494fa80b617ed",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.3.3"
+                "php": ">=5.5.9"
+            },
+            "require-dev": {
+                "symfony/console": "~2.8|~3.0"
+            },
+            "suggest": {
+                "symfony/console": "For validating YAML files using the lint command"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "2.1-dev"
+                    "dev-master": "3.3-dev"
                 }
             },
             "autoload": {
-                "psr-0": {
-                    "Symfony\\Component\\Yaml": ""
-                }
+                "psr-4": {
+                    "Symfony\\Component\\Yaml\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
@@ -1731,31 +1739,31 @@
             ],
             "authors": [
                 {
-                    "name": "Symfony Community",
-                    "homepage": "http://symfony.com/contributors"
-                },
-                {
                     "name": "Fabien Potencier",
                     "email": "fabien@symfony.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
                 }
             ],
             "description": "Symfony Yaml Component",
-            "homepage": "http://symfony.com",
+            "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/yaml/tree/v2.1.2"
+                "source": "https://github.com/symfony/yaml/tree/3.3"
             },
-            "time": "2012-08-22T13:48:41+00:00"
+            "time": "2017-07-23T12:43:26+00:00"
         }
     ],
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": [],
     "prefer-stable": false,
-    "prefer-lowest": true,
+    "prefer-lowest": false,
     "platform": {
         "php": "~5.5 || ~7.0",
         "ext-pdo": "*"
     },
     "platform-dev": [],
-    "plugin-api-version": "2.0.0"
+    "plugin-api-version": "2.6.0"
 }
